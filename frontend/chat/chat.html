@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seekura Chat</title>
+  <link rel="stylesheet" href="/chat/css/styles2.css">
+</head>
+<body>
+
+<div class="chat-container">
+
+  <!-- Header with character image and controls -->
+  <div class="chat-header">
+    <div class="character-portrait">
+      <img id="characterImage" class="character-img" />
+      <div id="characterBadge">No Character Molded</div>
+    </div>
+
+    <div class="chat-controls">
+      <h1>Seekura Chat</h1>
+      <select id="characterSelect" class="character-select"></select>
+      <button id="editPersonalityBtn" class="personality-btn">Edit Personality</button>
+      <button id="newSessionBtn" class="personality-btn">New Session</button>
+      <!--button id="clearChatBtn" class="personality-btn">Clear Chat</button-->
+      <!--button id="clearBtn">Clear Chat</button-->
+    </div>
+  </div>
+
+  <!-- Chat conversation -->
+  <main id="chatWindow" class="chat-window"></main>
+
+  <!-- Input bar -->
+  <footer class="chat-footer">
+    <div id="inputBar">
+      <input id="userInput" placeholder="Say something..." />
+      <button id="sendBtn">Send</button>
+      
+    </div>
+  </footer>
+
+  <!-- Personality popup -->
+  <div id="personalityPopup" class="popup-hidden">
+    <div class="popup-content">
+      <h3>Edit Character Personality</h3>
+      <textarea id="systemPromptInput" rows="6"></textarea>
+      <div class="popup-buttons">
+        <button id="savePromptBtn">Save</button>
+        <button id="cancelPromptBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="/chat/js/main.js"></script>
+</body>
+</html>

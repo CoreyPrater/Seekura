@@ -1,0 +1,211 @@
+/* =============================
+   Base Page
+============================= */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: #1e1e1e;
+    color: #eee;
+}
+body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* =============================
+   Chat Container
+============================= */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    width: 90%;
+    max-width: 1200px;
+    height: 95vh;
+    background: #2a2a2a;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    overflow: hidden;
+}
+
+/* =============================
+   Header
+============================= */
+.chat-header {
+    display: flex;
+    gap: 20px;
+    padding: 15px;
+    background: #2f2f2f;
+    border-bottom: 1px solid #444;
+}
+
+/* Portrait block */
+.character-portrait {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.character-img {
+    width: 250px;
+    height: 250px;
+    border-radius: 15px;
+    object-fit: scale-down;
+    border: 2px solid #555;
+    background: #1a1a1a;
+}
+#characterBadge {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1f6f3a;
+    background: #222;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid #1f6f3a;
+    max-width: 250px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    /* BASE GREEN GLOW */
+    box-shadow:
+      0 0 6px rgba(0, 255, 140, 0.35),
+      0 0 12px rgba(0, 255, 140, 0.15);
+
+    transition:
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+}
+
+#characterBadge.speaking {
+    border-color: #3cff9e;
+    box-shadow:
+      0 0 10px rgba(0, 255, 140, 0.85),
+      0 0 22px rgba(0, 255, 140, 0.65),
+      0 0 38px rgba(0, 255, 140, 0.35);
+}
+
+@keyframes badgeIdleGlow {
+  0%   { box-shadow: 0 0 6px rgba(0,255,140,0.25); }
+  50%  { box-shadow: 0 0 10px rgba(0,255,140,0.4); }
+  100% { box-shadow: 0 0 6px rgba(0,255,140,0.25); }
+}
+
+#characterBadge {
+  animation: badgeIdleGlow 4s ease-in-out infinite;
+}
+
+
+
+/* =============================
+   Controls
+============================= */
+.chat-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.chat-controls h1 { margin:0; font-size:26px; }
+.character-select { padding:8px; border-radius:8px; border:1px solid #555; background:#222; color:#eee; }
+.personality-btn { padding:8px 14px; border-radius:8px; border:none; background:#444; color:#eee; cursor:pointer; }
+.personality-btn:hover { background:#666; }
+
+/* =============================
+   Chat Window
+============================= */
+.chat-window {
+    flex: 1;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    background: #1f1f1f;
+}
+
+/* =============================
+   Chat Messages
+============================= */
+.chat-msg {
+    max-width: 65%;
+    padding: 10px 15px;
+    border-radius: 20px;
+    line-height: 1.4;
+}
+.chat-msg.user { align-self:flex-end; background:#0b84ff; color:#fff; }
+.chat-msg.character { align-self:flex-start; background:#3a3a3a; color:#eee; }
+
+/* =============================
+   Typing Bubble (inline)
+============================= */
+.typing-bubble {
+  max-width: 60%;
+  padding: 10px 14px;
+  margin: 8px 0;
+  border-radius: 18px;
+  background: #2a2a2a;
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 6px;
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: #aaa;
+  border-radius: 50%;
+  animation: blink 1.4s infinite both;
+}
+.typing-dot:nth-child(2) { animation-delay:0.2s; }
+.typing-dot:nth-child(3) { animation-delay:0.4s; }
+@keyframes blink { 0%{opacity:0.2;} 20%{opacity:1;} 100%{opacity:0.2;} }
+
+/* =============================
+   Input Bar
+============================= */
+.chat-footer { padding:10px; background:#2f2f2f; border-top:1px solid #444; }
+#inputBar { display:flex; gap:10px; }
+#userInput { flex:1; padding:12px; border-radius:20px; border:1px solid #555; background:#222; color:#eee; }
+#sendBtn { padding:12px 22px; border-radius:20px; border:none; background:#0b84ff; color:#fff; font-weight:bold; cursor:pointer; }
+#sendBtn:hover { background:#0a6ecc; }
+
+/* =============================
+   Personality Popup
+============================= */
+.popup-hidden { display:none; }
+#personalityPopup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    background:#2a2a2a;
+    border-radius:15px;
+    padding:20px;
+    width:320px;
+    box-shadow:0 0 30px rgba(0,0,0,0.7);
+}
+
+
+/* ----------------------------- */
+/* Typing/Loading Indicator      */
+/* ----------------------------- */
+.typing-loader {
+  display: inline-block;
+  padding: 5px 10px;
+  margin: 5px;
+  background: #e0f0d9;
+  border-radius: 8px;
+  font-style: italic;
+  color: #333;
+  animation: blink 1.2s infinite;
+}
+
+@keyframes blink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0.4; }
+}
+
+

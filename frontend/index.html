@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seekura</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<button onclick="window.location.href='/chat'">
+  Open Character Chat
+</button>
+
+<div class="app-header">
+  <img src="/assets/seekura.jpg" alt="Seekura" class="header-image" id="headerImage">
+  <div class="header-text">
+    <h1>Seekura</h1>
+    <h3>Where are you Promptske? - Seekura</h3>
+  </div>
+</div>
+
+<div id="promptPanel">
+  <div class="prompt-row">
+    <label for="prompt">Positive Prompt:</label>
+    <textarea id="prompt" rows="3" placeholder="Describe your image..."></textarea>
+  </div>
+  <div class="prompt-row">
+    <label for="negativePrompt">Negative Prompt:</label>
+    <textarea id="negativePrompt" rows="2" placeholder="Optional negative prompts..."></textarea>
+  </div>
+  <div class="prompt-row">
+    <label for="artStyle">Art Style:</label>
+    <select id="artStyle"></select>
+
+    <label for="numImages">Number of Images:</label>
+    <input type="number" id="numImages" value="1" min="1" max="10">
+
+    <button id="generateBtn">Generate</button>
+  </div>
+</div>
+
+<div id="status"></div>
+<div id="results"></div>
+
+<div id="loadingAnimation">
+  <img src="/assets/hand1.png" alt="Hand Animation" id="handSign">
+</div>
+
+<script type="module" src="/js/headerState.js"></script>
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

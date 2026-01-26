@@ -1,0 +1,275 @@
+/* ============================
+   Base
+============================ */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #1e1e1e;
+  color: #fff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ============================
+   Header
+============================ */
+.app-header {
+  text-align: center;
+  padding: 16px;
+}
+
+.header-image {
+  max-width: 150px;
+  transition: transform 0.3s ease, filter 0.3s ease, opacity 0.1s ease;
+}
+
+/* ============================
+   Glow / Pulse
+============================ */
+.pulse-active {
+  animation: neonPulse 0.8s infinite alternate;
+}
+
+@keyframes neonPulse {
+  from {
+    transform: scale(1);
+    filter: drop-shadow(0 0 15px #33bbff) drop-shadow(0 0 30px #0099ff);
+  }
+  to {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 25px #33bbff) drop-shadow(0 0 50px #0099ff);
+  }
+}
+
+.header-glow {
+  filter: drop-shadow(0 0 20px #33bbff);
+}
+
+/* ============================
+   Breathing
+============================ */
+.idle-breathe {
+  animation: breathe 4.5s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+
+/* ============================
+   Punch Shake
+============================ */
+.shake {
+  animation: shake 0.4s linear infinite;
+}
+
+@keyframes shake {
+  0% { transform: translate(0); }
+  25% { transform: translate(-4px, 2px); }
+  50% { transform: translate(4px, -2px); }
+  75% { transform: translate(-2px, -4px); }
+  100% { transform: translate(0); }
+}
+
+/* ============================
+   Prompts
+============================ */
+#promptPanel {
+  padding: 12px;
+}
+
+.prompt-row {
+  margin-bottom: 12px;
+}
+
+textarea,
+select,
+input,
+button {
+  width: 100%;
+  padding: 10px;
+  background: #2e2e2e;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+button {
+  background: #33bbff;
+  color: #000;
+  border: 2px solid #33bbff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #00f6ff;
+}
+
+/* ============================
+   Results
+============================ */
+#results {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+}
+
+.image-box {
+  position: relative;
+  padding: 6px;
+  border-radius: 6px;
+  background: #121212;
+}
+
+.image-box img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+/* ============================
+   Chakra Pulse
+============================ */
+.chakra-pulse {
+  position: absolute;
+  inset: 50%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(0,255,255,0.8), transparent 70%);
+  animation: chakra-expand 0.8s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes chakra-expand {
+  from {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(8);
+    opacity: 0;
+  }
+}
+
+/* ============================
+   Hand Sign
+============================ */
+#loadingAnimation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  z-index: 9999; /* higher than any other element */
+}
+
+#loadingAnimation img {
+  width: 100px;
+  max-width: 40vw;
+  height: auto;
+  filter: drop-shadow(0 0 20px #0099ff) drop-shadow(0 0 40px #0033ff);
+  transition: transform .15s ease, filter .15s ease;
+}
+
+
+/* ============================
+   Lay State Styling (Desktop Adjust)
+============================ */
+@media screen and (min-width: 768px) {
+  .lay {
+    position: relative;       /* allow vertical shift */
+    top: -100px;               /* move up 60px */
+    transform: rotate(-12deg) scale(1);
+    width: 80vw;
+    max-width: none;
+    height: auto;
+    transition: transform 0.5s ease-in-out, top 0.5s ease-in-out;
+    z-index: 1000;
+    display: block;
+    margin: 0 auto;
+  }
+}
+
+/* ============================
+   Lay State Styling (Force Full Size)
+============================ */
+.lay {
+  width: 90vw !important;       /* force large width */
+  height: auto !important;      /* maintain aspect ratio */
+  max-width: none !important;   /* remove any previous max-width constraints */
+  transform: rotate(-12deg) scale(1) !important; /* rotation only, don't let previous scale interfere */
+  transition: transform 0.5s ease-in-out, width 0.5s ease-in-out !important;
+  z-index: 500;                /* bring above other elements */
+  display: block;
+  margin: 0 auto;               /* center horizontally */
+}
+
+/* Optional subtle breathing in lay state */
+.lay-breathe {
+  animation: breathe-lay 4s ease-in-out infinite;
+}
+
+@keyframes breathe-lay {
+  0% { transform: rotate(-12deg) scale(0.98); }
+  50% { transform: rotate(-12deg) scale(1.02); }
+  100% { transform: rotate(-12deg) scale(0.98); }
+}
+
+
+/* ============================
+   Header Image Scaling
+============================ */
+
+/* Base style for all header images */
+.header-image {
+  max-width: 150px; /* old default for small screens */
+  height: auto;
+  margin-bottom: 12px;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+/* ----------------------------
+   Desktop scaling
+   Increase all Seekura images 3x on PC
+---------------------------- */
+@media screen and (min-width: 768px) {
+  .header-image {
+    max-width: 250px; /* ~3x original */
+  }
+}
+
+/* ----------------------------
+   Mobile adjustments
+---------------------------- */
+@media screen and (max-width: 767px) {
+  .header-image {
+    max-width: 120px; /* smaller for mobile */
+  }
+}
+
+/* ============================
+   Seekura Shy Hover (desktop only)
+============================ */
+
+
+.punch-shake {
+  animation: punchShake 0.8s ease-in-out;
+}
+
+@keyframes punchShake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
