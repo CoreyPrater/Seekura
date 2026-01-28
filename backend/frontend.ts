@@ -8,7 +8,8 @@ export async function serveFrontend(req: Request, baseDir: string) {
   let filePath: string;
   if (path === '/') filePath = join(baseDir, 'index.html');
   else if (path === '/chat') filePath = join(baseDir, 'chat/chat.html');
-  else if (path === '/favicon.ico') filePath = join(baseDir, 'favicon.ico');
+  
+  else if (path === '/favicon_ico') filePath = join('favicon_io', 'favicon.ico') // ✅ GOOD
   else filePath = join(baseDir, path);
 
   try {
