@@ -21,7 +21,7 @@ async function send() {
     console.warn("No active character or session. Cannot send message.");
     return;
   }
-
+  
   appendMessage(text, "user");
   input.value = "";
 
