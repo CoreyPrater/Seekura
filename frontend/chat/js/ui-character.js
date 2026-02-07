@@ -18,6 +18,7 @@ export async function loadCharacters() {
     characterListEl.appendChild(option);
   });
 
+  characters.sort((a, b) => a.name.localeCompare(b.name));
   if (characters.length > 0) {
     characterListEl.value = characters[0].id;
     selectCharacter(characters[0]);

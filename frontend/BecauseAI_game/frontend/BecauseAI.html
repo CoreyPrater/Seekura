@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Because...AI!</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+    #images img { border: 2px solid #333; border-radius: 5px; cursor: pointer; margin: 5px; }
+    input { margin: 5px 0; padding: 5px; width: 200px; }
+    button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+    .selected { border-color: red; }
+  </style>
+</head>
+<body>
+
+  <h1>Because...AI!</h1>
+
+  <div>
+    <button id="startBtn">Start Round</button>
+  </div>
+
+  <h2>Prompt:</h2>
+  <p id="prompt">Click "Start Round" to see the prompt.</p>
+
+  <div>
+    <input id="playerId" placeholder="Player ID" />
+    <input id="playerText" placeholder="Complete the sentence..." />
+    <button id="submitBtn">Submit Text</button>
+  </div>
+
+  <div>
+    <button id="generateBtn">Generate Images</button>
+  </div>
+
+  <h2>Generated Variants:</h2>
+  <div id="images" style="display:flex; flex-wrap: wrap;"></div>
+
+  <script src="becauseAI.js"></script>
+</body>
+</html>

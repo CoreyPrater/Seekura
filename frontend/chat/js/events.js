@@ -1,5 +1,5 @@
 // ==============================
-// events.js — Chat handling
+// events.js — Chat handling (private mode compatible)
 // ==============================
 
 import { state } from "./state.js";
@@ -10,29 +10,50 @@ const input = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
 const characterSelect = document.getElementById("characterSelect");
+const privateModeToggle = document.getElementById("privateModeToggle");
+
+// Load saved private mode
+let privateMode = localStorage.getItem("privateMode") === "true";
+privateModeToggle.checked = 0;
+
+// Update private mode when toggled
+privateModeToggle.addEventListener("change", () => {
+  privateMode = privateModeToggle.checked;
+  localStorage.setItem("privateMode", String(privateMode));
+  console.log("Private mode:", privateMode);
+});
+
+// Auto-grow textarea
+function autoGrow(el) {
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
+
+input.addEventListener("input", () => autoGrow(input));
+autoGrow(input); // on load if text exists
 
 /**
  * Send a user message
- */
-async function send() {
+ */async function send() {
   const text = input.value.trim();
   if (!text) return;
-  if (!state.currentCharacter || !state.sessionId) {
-    console.warn("No active character or session. Cannot send message.");
-    return;
-  }
-  
+  if (!state.currentCharacter) return console.warn("No active character.");
+
   appendMessage(text, "user");
   input.value = "";
+  autoGrow(input);
 
   const typingBubble = showTypingBubble();
   sendBtn.disabled = true;
 
   try {
+    // If private mode is on, don't persist messages
+    const sessionIdToUse = privateModeToggle.checked ? null : state.sessionId;
+
     const reply = await sendChatMessage(
       state.currentCharacter.id,
       text,
-      state.sessionId,
+      sessionIdToUse,
       state.currentCharacter?.character_profile || ""
     );
 
@@ -47,6 +68,7 @@ async function send() {
   }
 }
 
+
 /**
  * Clear all messages in chat
  */
@@ -60,25 +82,22 @@ function clearMessages() {
  */
 async function newSession() {
   const selectedId = characterSelect.value;
-  const character = state.characters?.find(c => c.id === selectedId);
+  const character = state.characters?.find(c => c.id == selectedId);
   if (!character) return alert("Please select a character.");
 
   clearChat();
   sendBtn.disabled = true;
 
   try {
-    const { sessionId, messages } = await startSession(character.id, state.userId);
-
+    // optional "session" object for frontend only
+    const sessionId = crypto.randomUUID(); // fake session ID
     state.currentCharacter = character;
     state.sessionId = sessionId;
-    state.messages = messages ?? [];
+    state.messages = [];
 
-    // Display all previous messages
-    state.messages.forEach(msg => {
-      appendMessage(msg.content, msg.role === "user" ? "user" : "character");
-    });
+    appendMessage(`Session started with ${character.name}`, "system");
   } catch (err) {
-    console.error("[Start session error]", err);
+    console.error("[New session error]", err);
     appendMessage("⚠️ Failed to start session.", "system");
   } finally {
     sendBtn.disabled = false;
@@ -102,11 +121,31 @@ export function bindChatEvents() {
   const newSessionBtn = document.getElementById("newSessionBtn");
   if (newSessionBtn) newSessionBtn.addEventListener("click", newSession);
 
-  // Load characters into dropdown
   loadCharactersFromAPI()
-    .then(chars => {
-      state.characters = chars;
-      characterSelect.innerHTML = chars.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
-    })
-    .catch(err => console.error("[Load characters error]", err));
+  .then(chars => {
+    state.characters = chars;
+
+    // Sort ascending
+    chars.sort((a, b) => a.name.localeCompare(b.name));
+
+    characterSelect.innerHTML = chars
+      .map(c => `<option value="${c.id}">${c.name}</option>`)
+      .join("");
+  })
+  .catch(err => console.error("[Load characters error]", err));
+
+
 }
+
+
+
+
+//Slider. 
+const slider = document.getElementById("privateModeToggle");
+slider.addEventListener("change", (e) => {
+  
+  if(e.target.value === "on")
+  {  
+    alert("All storage of data has moved to local storage. Local to your device. No memory will be preserved but nothing you type will be saved to the database.");
+  }
+});

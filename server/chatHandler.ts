@@ -1,56 +1,46 @@
 // server/chatHandler.ts
 import type { Message } from "./types.ts";
-
-// IMPORTANT: your supabase.ts lives in /backend, not /server
 import { supabaseRequest, bootstrapSession } from "../backend/supabase.ts";
 
 const OLLAMA_URL = "http://localhost:11434/api/chat";
-const MODEL = "zarigata/unfiltered-llama3";
+const MODEL = "adi0adi/ollama_stheno-8b_v3.1_q6k";
 
 /**
- * Small sanitization (optional)
- * Keep it minimal: do NOT rewrite personality too hard here.
+ * Minimal sanitization of AI response.
  */
 function sanitizeAIResponse(text: string) {
   return String(text)
-    .replace(/\*[^*]+\*/g, "") // remove *actions* if model insists
+    .replace(/\*[^*]+\*/g, "") // remove *actions*
     .trim();
 }
 
 /**
- * Ensures the session has exactly ONE system bootstrap message.
- * If missing, create it.
+ * Ensure a session has a system bootstrap message.
  */
 async function ensureBootstrapped(session_id: string, characterProfile: string) {
   const existing: any[] =
     (await supabaseRequest(
-      `messages?session_id=eq.${session_id}&role=eq.system&order=created_at.asc&limit=1`,
+      `messages?session_id=eq.${session_id}&role=eq.system&order=created_at.asc&limit=1`
     ).catch(() => [])) || [];
 
   if (!existing.length) {
     console.log("[handleChat] Bootstrapping system message (missing)");
     await bootstrapSession(session_id, characterProfile);
-    return;
   }
-
-  // If you want to “version” the bootstrap later, add a marker line in template
-  // and check it here. For now: if system exists, do nothing.
 }
 
 /**
- * Main API used by ollamaProxy.ts
- * generateCharacterReply(character_id, messages, session_id)
+ * Generate a character reply via Ollama.
+ * If session_id is undefined/null, no messages are persisted.
  */
 export async function generateCharacterReply(
   character_id: string,
   incoming: Message[],
-  session_id?: string,
+  session_id?: string
 ): Promise<string> {
   if (!character_id) throw new Error("Missing character_id");
   if (!incoming?.length) throw new Error("Missing messages");
 
-  // If proxy didn't pass a session_id, you can't store history safely.
-  // But we can still run a one-shot call.
   const hasSession = Boolean(session_id);
 
   console.log("[handleChat] START", {
@@ -64,20 +54,18 @@ export async function generateCharacterReply(
     (await supabaseRequest(`characters?id=eq.${character_id}`).catch(() => [])) || [];
 
   const characterProfile =
-    characters[0]?.character_profile ??
-    "You are a fictional character. Stay in character at all times.";
+    characters[0]?.character_profile ?? "You are a fictional character. Stay in character at all times.";
 
   console.log("[handleChat] Character profile loaded");
 
-  // 2) If we have a session_id, ensure bootstrap exists + persist user msg + fetch history
+  // 2) Format messages
   let formattedMessages: { role: "system" | "user" | "assistant"; content: string }[] = [];
 
   if (hasSession) {
     await ensureBootstrapped(session_id!, characterProfile);
 
-    // Persist newest user message only
+    // Persist newest user message
     const userMsg = incoming[incoming.length - 1]?.content ?? "";
-
     console.log("[handleChat] Persisting user message", { preview: userMsg.slice(0, 120) });
 
     await supabaseRequest("messages", {
@@ -90,24 +78,20 @@ export async function generateCharacterReply(
       }),
     }).catch((err) => console.error("[handleChat] Failed to persist user message", err));
 
-    // Load full session history (system + all messages)
+    // Load full session history
     const prevMsgs: any[] =
-      (await supabaseRequest(
-        `messages?session_id=eq.${session_id}&order=created_at.asc`,
-      ).catch(() => [])) || [];
+      (await supabaseRequest(`messages?session_id=eq.${session_id}&order=created_at.asc`).catch(() => [])) || [];
 
     formattedMessages = prevMsgs.map((m) => ({
       role: m.role === "system" ? "system" : m.role === "assistant" ? "assistant" : "user",
       content: m.content,
     }));
   } else {
-    // No session id: one-shot prompt
-    // Put bootstrap as the first message in-memory only
+    // One-shot in-memory only
     formattedMessages = [
       {
         role: "system",
-        content:
-          `You are a fictional character in an interactive roleplay conversation.\n\n--- CHARACTER PROFILE ---\n${characterProfile}`.trim(),
+        content: `You are a fictional character in an interactive roleplay conversation.\n\n--- CHARACTER PROFILE ---\n${characterProfile}`.trim(),
       },
       ...incoming.map((m) => ({
         role: m.role === "assistant" ? "assistant" : "user",
@@ -119,31 +103,35 @@ export async function generateCharacterReply(
   console.log("[handleChat] Sending to Ollama", { messageCount: formattedMessages.length });
 
   // 3) Call Ollama
-  const ollamaRes = await fetch(OLLAMA_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: formattedMessages,
-      stream: false,
-    }),
-  });
+  let aiReply = "[No reply generated]";
+  try {
+    const ollamaRes = await fetch(OLLAMA_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: formattedMessages,
+        stream: false,
+      }),
+    });
 
-  if (!ollamaRes.ok) {
-    const text = await ollamaRes.text();
-    console.error("[handleChat] Ollama HTTP error", text);
-    throw new Error(text);
+    if (!ollamaRes.ok) {
+      const text = await ollamaRes.text();
+      console.error("[handleChat] Ollama HTTP error", text);
+      throw new Error(text);
+    }
+
+    const data = await ollamaRes.json().catch(() => ({}));
+    console.log("[handleChat] Ollama raw response", data);
+
+    if (data?.message?.content) {
+      aiReply = sanitizeAIResponse(data.message.content);
+    } else {
+      console.warn("[handleChat] Ollama returned empty content, using placeholder");
+    }
+  } catch (err) {
+    console.error("[handleChat] Ollama fetch error", err);
   }
-
-  const data = await ollamaRes.json();
-  console.log("[handleChat] Ollama raw response", data);
-
-  let aiReply = data?.message?.content;
-  if (!aiReply || typeof aiReply !== "string") {
-    throw new Error("Ollama did not return assistant content");
-  }
-
-  aiReply = sanitizeAIResponse(aiReply);
 
   // 4) Persist assistant reply if session exists
   if (hasSession) {

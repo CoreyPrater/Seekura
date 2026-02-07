@@ -9,14 +9,20 @@ export async function loadCharactersFromAPI() {
 }
 
 export async function savePersonality(id, profile) {
+  console.log("Saving personality:", id, profile);
   const resp = await fetch(`/characters/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ character_profile: profile }),
   });
+
   if (!resp.ok) throw new Error("Failed to save personality");
-  return resp.json();
+
+  const data = await resp.json(); // wait for JSON
+  console.log("Server returned:", data);
+  return data;
 }
+
 
 export async function startSession(characterId, userId) {
   const resp = await fetch("/sessions", {
@@ -32,12 +38,12 @@ export async function startSession(characterId, userId) {
     messages: data.messages ?? [], // includes all previous messages
   };
 }
-
 export async function sendChatMessage(characterId, text, sessionId) {
+  // Only include session_id if it exists (not null/empty)
   const payload = {
     character_id: characterId,
-    session_id: sessionId,
     messages: [{ role: "user", content: text }],
+    ...(sessionId ? { session_id: sessionId } : {}), // conditional
   };
 
   const resp = await fetch("/chat", {

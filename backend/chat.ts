@@ -2,123 +2,116 @@
 import type { Message } from './types.ts';
 
 const OLLAMA_URL = 'http://localhost:11434/api/chat';
-const MODEL = 'zarigata/unfiltered-llama3';
+const MODEL = 'adi0adi/ollama_stheno-8b_v3.1_q6k';
+
+function sanitizeAIResponse(text: string) {
+  return String(text)
+    .replace(/\*[^*]+\*/g, '') // remove *actions*
+    .trim();
+}
 
 export async function handleChat(
   character_id: string,
-  session_id: string,
+  session_id: string | null,
   incoming: Message[]
 ): Promise<string> {
-
   const startTime = Date.now();
   console.log('[handleChat] START', { character_id, session_id, incomingCount: incoming.length });
 
-  if (!character_id || !session_id || !incoming?.length) {
-    throw new Error('Missing character_id, session_id, or messages');
+  if (!character_id || !incoming?.length) {
+    throw new Error('Missing character_id or messages');
   }
 
-  /* -----------------------------
-     Load character profile
-  ----------------------------- */
-  const characters: any[] =
-    await supabaseRequest(`characters?id=eq.${character_id}`).catch(() => []);
-
+  // 1) Load character profile
+  const characters: any[] = await supabaseRequest(`characters?id=eq.${character_id}`).catch(() => []);
   const characterProfile =
     characters[0]?.character_profile ??
     'You are a fictional character. Stay fully in character at all times.';
-
   console.log('[handleChat] Character profile loaded');
 
-  /* -----------------------------
-     Bootstrap session if missing
-  ----------------------------- */
-  const messagesInSession: any[] =
-    await supabaseRequest(`messages?session_id=eq.${session_id}`).catch(() => []);
-
-  if (!messagesInSession.some(m => m.role === 'system')) {
-    console.log('[handleChat] Bootstrapping system message');
-    await bootstrapSession(session_id, characterProfile);
+  // 2) Bootstrap session if session_id exists
+  const hasSession = Boolean(session_id);
+  if (hasSession) {
+    const messagesInSession: any[] = await supabaseRequest(`messages?session_id=eq.${session_id}`).catch(() => []);
+    if (!messagesInSession.some(m => m.role === 'system')) {
+      console.log('[handleChat] Bootstrapping system message');
+      await bootstrapSession(session_id!, characterProfile);
+    }
   }
 
-  /* -----------------------------
-     Persist latest user message
-  ----------------------------- */
+  // 3) Persist latest user message if session exists
   const userMsg = incoming[incoming.length - 1]?.content ?? '';
-  console.log('[handleChat] Persisting user message', { preview: userMsg.slice(0, 100) });
-
-  await supabaseRequest('messages', {
-    method: 'POST',
-    body: JSON.stringify({
-      session_id,
-      role: 'user',
-      content: userMsg,
-      created_at: new Date().toISOString(),
-    }),
-  }).catch(err => console.error('[handleChat] Failed to persist user message', err));
-
-  /* -----------------------------
-     Load conversation history
-     Keep role hierarchy intact
-  ----------------------------- */
-  const prevMsgs: any[] =
-    await supabaseRequest(`messages?session_id=eq.${session_id}&order=created_at.asc`).catch(() => []);
-
-  const formattedMessages = prevMsgs.map(m => ({
-    role: m.role === 'system' ? 'system' : m.role === 'assistant' ? 'assistant' : 'user',
-    content: m.content,
-  }));
-
-  // Ensure exactly ONE system message at the top
-  const systemMessages = formattedMessages.filter(m => m.role === 'system');
-  const nonSystemMessages = formattedMessages.filter(m => m.role !== 'system');
-  const finalMessages = [
-    systemMessages[0] ?? { role: 'system', content: 'You are a fictional character.' },
-    ...nonSystemMessages,
-  ];
-
-  console.log('[handleChat] Sending to Ollama', { messageCount: finalMessages.length });
-
-  /* -----------------------------
-     Call Ollama API
-  ----------------------------- */
-  const ollamaRes = await fetch(OLLAMA_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: finalMessages,
-      stream: false,
-    }),
-  });
-
-  if (!ollamaRes.ok) {
-    const text = await ollamaRes.text();
-    console.error('[handleChat] Ollama HTTP error', text);
-    throw new Error(text);
+  if (hasSession) {
+    console.log('[handleChat] Persisting user message', { preview: userMsg.slice(0, 100) });
+    await supabaseRequest('messages', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id,
+        role: 'user',
+        content: userMsg,
+        created_at: new Date().toISOString(),
+      }),
+    }).catch(err => console.error('[handleChat] Failed to persist user message', err));
   }
 
-  const data = await ollamaRes.json();
-  console.log('[handleChat] Ollama raw response', data);
+  // 4) Prepare conversation for Ollama
+  let formattedMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [];
 
-  const aiReply = data?.message?.content;
-
-  if (!aiReply || typeof aiReply !== 'string') {
-    console.error('[handleChat] Invalid Ollama response shape', data);
-    throw new Error('Ollama did not return assistant content');
+  if (hasSession) {
+    const prevMsgs: any[] =
+      (await supabaseRequest(`messages?session_id=eq.${session_id}&order=created_at.asc`).catch(() => [])) || [];
+    formattedMessages = prevMsgs.map(m => ({
+      role: m.role === 'system' ? 'system' : m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content,
+    }));
+  } else {
+    // one-shot in-memory
+    formattedMessages = [
+      { role: 'system', content: `You are a fictional character in an interactive roleplay.\n\n--- CHARACTER PROFILE ---\n${characterProfile}`.trim() },
+      ...incoming.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
+    ];
   }
 
-  /* -----------------------------
-     Persist assistant message
-  ----------------------------- */
-  await supabaseRequest('messages', {
-    method: 'POST',
-    body: JSON.stringify({
-      session_id,
-      role: 'assistant',
-      content: aiReply,
-      created_at: new Date().toISOString(),
-    }),
-  }).catch(err => console.error('[handleChat] Failed to persist assistant message', err));
+  console.log('[handleChat] Sending to Ollama', { messageCount: formattedMessages.length });
+
+  // 5) Call Ollama API
+  let aiReply = '[No reply generated]';
+  try {
+    const ollamaRes = await fetch(OLLAMA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: MODEL, messages: formattedMessages, stream: false }),
+    });
+
+    if (!ollamaRes.ok) {
+      const text = await ollamaRes.text();
+      console.error('[handleChat] Ollama HTTP error', text);
+    } else {
+      const data = await ollamaRes.json().catch(() => ({}));
+      console.log('[handleChat] Ollama raw response', data);
+
+      if (data?.message?.content) {
+        aiReply = sanitizeAIResponse(data.message.content) || aiReply;
+      } else {
+        console.warn('[handleChat] Ollama returned empty content, using placeholder');
+      }
+    }
+  } catch (err) {
+    console.error('[handleChat] Ollama fetch error', err);
+  }
+
+  // 6) Persist assistant reply if session exists
+  if (hasSession) {
+    await supabaseRequest('messages', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id,
+        role: 'assistant',
+        content: aiReply,
+        created_at: new Date().toISOString(),
+      }),
+    }).catch(err => console.error('[handleChat] Failed to persist assistant message', err));
+  }
 
   console.log('[handleChat] RETURNING assistant reply', {
     length: aiReply.length,

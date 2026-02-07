@@ -4,8 +4,8 @@ Write-Host "Killing existing Python, Node, Deno processes..."
 Get-Process python, node, deno -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Job | Remove-Job -Force -ErrorAction SilentlyContinue
 
-$Env:SUPABASE_URL="NOT PROVIDED FOR GITHUB commit"
-$Env:SUPABASE_ANON_KEY="NOT PROVIDED GITHUB commit"
+$Env:SUPABASE_URL="https://fhtzawegbejlfyqkipnp.supabase.co"
+$Env:SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZodHphd2VnYmVqbGZ5cWtpcG5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0Mzk4MDMsImV4cCI6MjA4NDAxNTgwM30.13S_lHY3ftr98r3lPvAGLKOrfyVI2hTFfywLTjwUmug"
 
 
 $ErrorActionPreference = "Stop"

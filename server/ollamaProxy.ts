@@ -9,7 +9,7 @@ import { v4 } from "https://deno.land/std@0.177.0/uuid/mod.ts";
 import { generateCharacterReply  } from "./chatHandler.ts"; // clean import
 
 const OLLAMA_LOCAL_URL = "http://localhost:11434/api/chat";
-const DEFAULT_MODEL = "zarigata/unfiltered-llama3";
+const DEFAULT_MODEL = "adi0adi/ollama_stheno-8b_v3.1_q6k";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_KEY = Deno.env.get("SUPABASE_ANON_KEY");
@@ -52,24 +52,38 @@ serve(async (req) => {
       if (error) throw error;
       return new Response(JSON.stringify(data || {}), { status: 200, headers });
     }
-
     // -----------------------------
     // PUT /characters/:id
     // -----------------------------
-    if (req.method === "PUT" && /^\/characters\/\d+$/.test(path)) {
-      const id = Number(path.split("/").pop());
+    if (req.method === "PUT" && /^\/characters\/[a-f0-9-]+$/i.test(path)) {
+      const id = path.split("/").pop(); // keep UUID as string
       const body = await req.json();
+
+      // Only send keys that exist and are defined
       const updates: Record<string, any> = {};
       if (body.character_profile !== undefined) updates.character_profile = body.character_profile;
       if (body.tone !== undefined) updates.tone = body.tone;
       if (body.memory_summary !== undefined) updates.memory_summary = body.memory_summary;
 
-      const { error } = await supabase.from("characters").update(updates).eq("id", id);
-      if (error) throw error;
+      console.log("[PUT] Updating character:", id, updates);
 
-      const { data } = await supabase.from("characters").select("*").eq("id", id).single();
+      const { data, error } = await supabase
+        .from("characters")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single(); // returns the updated row
+
+      if (error) {
+        console.error("[PUT] Supabase error:", error);
+        throw error;
+      }
+
+      console.log("[PUT] Updated data:", data);
+
       return new Response(JSON.stringify(data || {}), { status: 200, headers });
     }
+
 
     // -----------------------------
     // POST /characters/:id/upload
